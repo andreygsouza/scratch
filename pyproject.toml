@@ -1,0 +1,76 @@
+[project]
+name = "scratch"
+version = "0.0.1"
+description = "My sandbox environment for testing new ideas"
+authors = [{ name = "Andrey de Souza", email = "andreygsouza@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = "==3.12.*"
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyarrow",
+  "matplotlib",
+  "seaborn",
+  "scikit-learn",
+  "notebook",
+  "optuna>=4.0.0",
+  "plotly>=5.24.1",
+  "openpyxl>=3.1.5",
+  "yellowbrick>=1.5",
+  "tabulate>=0.9.0",
+  "polars>=1.14.0",
+  "jupyter-copilot>=0.1.4",
+]
+
+[tool.uv]
+dev-dependencies = [
+  "ruff",
+  "pytest",
+  "pre-commit",
+  "typing_extensions",
+  "pandas-stubs",
+  "ipykernel",
+  "notebook",
+  "pytest-cov",
+]
+
+[project.urls]
+repository = ""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--log-cli-level=INFO -sv --durations=0"
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+
+[tool.ruff.lint]
+
+fixable = ["ALL"]
+ignore = [
+  "PLR0913", # too many arguments
+  "PLR0914", # too many local variables
+  "PLR0917", # too many positional arguments
+  "PLR2004", # magic number
+  "PLW2901", # pylint - for loop variable overwritten by assignment target
+  "E501",    # line too long
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401", "D104"]
+
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+
+[tool.coverage.report]
+skip_empty = true
+[tool.coverage.run]
+branch = true
+source = ["chaid_clustering"]

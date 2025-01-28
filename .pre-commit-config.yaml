@@ -1,0 +1,54 @@
+repos:
+  # - repo: https://github.com/psf/black
+  #   rev: 24.10.0
+  #   hooks:
+  #     - id: black
+  #       args:
+  #         - --line-length=119
+
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.7.4"
+    hooks:
+      # Run the linter.
+      - id: ruff
+        types_or: [ python, pyi ]
+        args: [ --fix, --config=pyproject.toml]
+      # Run the formatter.
+      - id: ruff-format
+        types_or: [ python, pyi ]
+        args: [--config=pyproject.toml]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+
+
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.0
+    hooks:
+      - id: pyupgrade
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
+      - id: isort
+        name: isort (cython)
+        types: [ cython ]
+      - id: isort
+        name: isort (pyi)
+        types: [ pyi ]
