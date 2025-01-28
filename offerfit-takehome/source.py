@@ -42,8 +42,12 @@ class DataModeler:
                 [col in oos_df.columns for col in self.feature_columns]
             ), f"Missing columns in the dataframe: {set(self.feature_columns) - set(oos_df.columns)}"
 
-        df = self.sample_df if oos_df is None else oos_df
-        df = df.drop(columns=["customer_id"])
+        df = (
+            self.sample_df.copy(deep=True)
+            if oos_df is None
+            else oos_df.copy(deep=True)
+        )  # create the work df
+        df = df.drop(columns=["customer_id"])  #
         df["transaction_date"] = pd.to_datetime(df["transaction_date"])
 
     def impute_missing(self, oos_df: pd.DataFrame = None) -> pd.DataFrame:
