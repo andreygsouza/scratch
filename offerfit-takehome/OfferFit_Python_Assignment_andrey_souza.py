@@ -27,6 +27,8 @@ from sklearn.utils.validation import check_is_fitted
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
+# this code was formatted using ruff on pre-commit
+
 
 def is_fitted(estimator):
     """
