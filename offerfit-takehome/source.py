@@ -15,8 +15,31 @@ Instructions:
 
 from __future__ import annotations
 
+import logging
+import textwrap
+
+import joblib
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+
+def is_fitted(estimator):
+    """
+    Check if the estimator is fitted
+    """
+    try:
+        check_is_fitted(estimator)
+        return True
+    except NotFittedError:
+        return False
 
 
 class DataModeler:
@@ -28,27 +51,58 @@ class DataModeler:
 
         self.model = None  # init the model here
         self.train_df = None
+        self.train_target = None
 
         self.feature_columns = ["amount", "transaction_date"]
 
-    def prepare_data(self, oos_df: pd.DataFrame = None) -> pd.DataFrame:
+    def prepare_data(self, oos_df: pd.DataFrame = None) -> pd.DataFrame | None:
         """
         Prepare a dataframe so it contains only the columns to model and having suitable types.
         If the argument is None, work on the training data passed in the constructor.
         """
-        if oos_df is not None:
-            # check for the needed columns
-            assert all(
-                [col in oos_df.columns for col in self.feature_columns]
-            ), f"Missing columns in the dataframe: {set(self.feature_columns) - set(oos_df.columns)}"
+        if oos_df is None:
+            logging.info("Preparing the training data")
+            train_df = (
+                self.sample_df.set_index("customer_id")
+                .loc[:, self.feature_columns]
+                .copy(deep=True)
+            )
+            y = self.sample_df["outcome"].copy(deep=True)
+            # convert dtypes
+            train_df["amount"] = train_df["amount"].astype(float)
+            train_df["transaction_date"] = pd.to_datetime(
+                train_df["transaction_date"]
+            )
+            train_df["transaction_date"] = (
+                train_df["transaction_date"].astype(int) / 10**9
+            )
 
-        df = (
-            self.sample_df.copy(deep=True)
-            if oos_df is None
-            else oos_df.copy(deep=True)
-        )  # create the work df
-        df = df.drop(columns=["customer_id"])  #
-        df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+            self.train_df = train_df
+            self.train_target = y
+
+        else:
+            logging.info("Preparing the out of sample data")
+            # check whether the needed columns are present
+            assert all(
+                col in oos_df.columns
+                for col in self.feature_columns + ["customer_id"]
+            ), f"Missing columns in the dataframe: {set(self.feature_columns+['customer_id']) - set(oos_df.columns)}"
+            # add customer_id to the index and slice the feature columns
+            adjusted_df = (
+                oos_df.set_index("customer_id")
+                .loc[:, self.feature_columns]
+                .copy(deep=True)
+            )
+            # convert dtypes
+            adjusted_df["amount"] = adjusted_df["amount"].astype(float)
+            adjusted_df["transaction_date"] = pd.to_datetime(
+                adjusted_df["transaction_date"]
+            )
+            adjusted_df["transaction_date"] = (
+                adjusted_df["transaction_date"].astype(int) / 10**9
+            )
+
+            return adjusted_df
 
     def impute_missing(self, oos_df: pd.DataFrame = None) -> pd.DataFrame:
         """
@@ -56,20 +110,45 @@ class DataModeler:
         If the argument is None, work on the training data passed in the constructor.
         Hint: Watch out for data leakage in your solution.
         """
-        # ** Your code here **
+        if oos_df is None:
+            logging.info("Imputing missing values in the training data")
+            self.train_df = self.train_df.fillna(self.train_df.mean())
+        else:
+            logging.info("Imputing missing values in the out of sample data")
+            # input on the out of sample data must be filled with the mean of the training data
+            filled_df = oos_df.fillna(self.train_df.mean()).copy()
+            return filled_df
 
     def fit(self) -> None:
         """
         Fit the model of your choice on the training data paased in the constructor, assuming it has
         been prepared by the functions prepare_data and impute_missing
         """
-        # ** Your code here **
+        logging.info("Fitting the model")
+        model = RandomForestClassifier(
+            n_estimators=10, max_depth=3, random_state=42
+        )
+        model.fit(self.train_df, self.train_target)
+        acc_score = model.score(self.train_df, self.train_target)
+        logging.info(f"Accuracy score: {acc_score:.2%}")
+        self.model = model
 
     def model_summary(self) -> str:
         """
         Create a short summary of the model you have fit.
         """
-        # ** Your code here **
+        # check if the self.model is fitted
+        assert is_fitted(
+            self.model
+        ), "Model is not fitted. Please fit the model first."
+        summary = textwrap.dedent(f"""
+        Model: {self.model.__class__.__name__}
+        Number of features: {self.train_df.shape[1]}
+        Number of samples: {self.train_df.shape[0]}
+        Binary target average: {self.train_target.mean():.2%}
+        Accuracy: {self.model.score(self.train_df, self.train_target):.2%}
+        """)
+        return summary
 
     def predict(self, oos_df: pd.DataFrame = None) -> pd.Series[bool]:
         """
@@ -77,20 +156,32 @@ class DataModeler:
         functions prepare_data and impute_missing.
         If the argument is None, work on the training data passed in the constructor.
         """
-        # ** Your code here **
+        if oos_df is None:
+            logging.info("Predicting on the training data")
+            predictions = self.model.predict(self.train_df)
+            pred_series = pd.Series(predictions, index=self.train_df.index)
+            return pred_series
+        else:
+            logging.info("Predicting on the out of sample data")
+            predictions = self.model.predict(oos_df)
+            pred_series = pd.Series(predictions, index=oos_df.index)
+            return pred_series
 
     def save(self, path: str) -> None:
         """
         Save the DataModeler so it can be re-used.
         """
-        # ** Your code here **
+        assert is_fitted(
+            self.model
+        ), "Model is not fitted. Please fit the model first."
+        joblib.dump(self, path)
 
     @staticmethod
     def load(path: str) -> DataModeler:
         """
         Reload the DataModeler from the saved state so it can be re-used.
         """
-        # ** Your code here **
+        return joblib.load(path)
 
 
 #################################################################################
