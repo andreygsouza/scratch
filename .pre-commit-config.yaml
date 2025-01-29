@@ -22,6 +22,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-added-large-files
+        args: [--maxkb=5120]  # Set the maximum file size to 5120 KB (5 MB)
       - id: check-case-conflict
       - id: check-docstring-first
       - id: check-merge-conflict

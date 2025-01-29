@@ -32,6 +32,10 @@ test: ## Test the code with pytest
 	@echo "✅ Testing code: Running pytest"
 	@uv run pytest
 
+notebook: ## Start a Jupyter notebook server
+	@echo "📓 Starting Jupyter notebook server"
+	@uv run jupyter lab
+
 update: ## Update pre-commit hooks
 	@echo "⚙️ Updating dependencies and pre-commit hooks"
 	@uv lock --upgrade
