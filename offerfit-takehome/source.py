@@ -62,20 +62,12 @@ class DataModeler:
         """
         if oos_df is None:
             logging.info("Preparing the training data")
-            train_df = (
-                self.sample_df.set_index("customer_id")
-                .loc[:, self.feature_columns]
-                .copy(deep=True)
-            )
+            train_df = self.sample_df.set_index("customer_id").loc[:, self.feature_columns].copy(deep=True)
             y = self.sample_df["outcome"].copy(deep=True)
             # convert dtypes
             train_df["amount"] = train_df["amount"].astype(float)
-            train_df["transaction_date"] = pd.to_datetime(
-                train_df["transaction_date"]
-            )
-            train_df["transaction_date"] = (
-                train_df["transaction_date"].astype(int) / 10**9
-            )
+            train_df["transaction_date"] = pd.to_datetime(train_df["transaction_date"])
+            train_df["transaction_date"] = train_df["transaction_date"].astype(int) / 10**9
 
             self.train_df = train_df
             self.train_target = y
@@ -84,23 +76,14 @@ class DataModeler:
             logging.info("Preparing the out of sample data")
             # check whether the needed columns are present
             assert all(
-                col in oos_df.columns
-                for col in self.feature_columns + ["customer_id"]
+                col in oos_df.columns for col in self.feature_columns + ["customer_id"]
             ), f"Missing columns in the dataframe: {set(self.feature_columns+['customer_id']) - set(oos_df.columns)}"
             # add customer_id to the index and slice the feature columns
-            adjusted_df = (
-                oos_df.set_index("customer_id")
-                .loc[:, self.feature_columns]
-                .copy(deep=True)
-            )
+            adjusted_df = oos_df.set_index("customer_id").loc[:, self.feature_columns].copy(deep=True)
             # convert dtypes
             adjusted_df["amount"] = adjusted_df["amount"].astype(float)
-            adjusted_df["transaction_date"] = pd.to_datetime(
-                adjusted_df["transaction_date"]
-            )
-            adjusted_df["transaction_date"] = (
-                adjusted_df["transaction_date"].astype(int) / 10**9
-            )
+            adjusted_df["transaction_date"] = pd.to_datetime(adjusted_df["transaction_date"])
+            adjusted_df["transaction_date"] = adjusted_df["transaction_date"].astype(int) / 10**9
 
             return adjusted_df
 
@@ -125,9 +108,7 @@ class DataModeler:
         been prepared by the functions prepare_data and impute_missing
         """
         logging.info("Fitting the model")
-        model = RandomForestClassifier(
-            n_estimators=10, max_depth=3, random_state=42
-        )
+        model = RandomForestClassifier(n_estimators=10, max_depth=3, random_state=42)
         model.fit(self.train_df, self.train_target)
         acc_score = model.score(self.train_df, self.train_target)
         logging.info(f"Accuracy score: {acc_score:.2%}")
@@ -138,16 +119,16 @@ class DataModeler:
         Create a short summary of the model you have fit.
         """
         # check if the self.model is fitted
-        assert is_fitted(
-            self.model
-        ), "Model is not fitted. Please fit the model first."
-        summary = textwrap.dedent(f"""
+        assert is_fitted(self.model), "Model is not fitted. Please fit the model first."
+        summary = textwrap.dedent(
+            f"""
         Model: {self.model.__class__.__name__}
         Number of features: {self.train_df.shape[1]}
         Number of samples: {self.train_df.shape[0]}
         Binary target average: {self.train_target.mean():.2%}
         Accuracy: {self.model.score(self.train_df, self.train_target):.2%}
-        """)
+        """
+        )
         return summary
 
     def predict(self, oos_df: pd.DataFrame = None) -> pd.Series[bool]:
@@ -171,9 +152,7 @@ class DataModeler:
         """
         Save the DataModeler so it can be re-used.
         """
-        assert is_fitted(
-            self.model
-        ), "Model is not fitted. Please fit the model first."
+        assert is_fitted(self.model), "Model is not fitted. Please fit the model first."
         joblib.dump(self, path)
 
     @staticmethod
@@ -347,9 +326,7 @@ print(f"Imputed missing as mean:\n{filled_test_sample}\n")
 
 oos_predictions = transactions_modeler.predict(filled_test_sample)
 print(f"Predicted on out of sample data: {oos_predictions}\n")
-print(
-    f"Accuracy = {sum(oos_predictions == [False, True, True, False, False])/.05}%"
-)
+print(f"Accuracy = {sum(oos_predictions == [False, True, True, False, False])/.05}%")
 
 # <Expected Output>
 # Predicted on out of sample data: [False True True False False] ([0 1 1 0 0])
