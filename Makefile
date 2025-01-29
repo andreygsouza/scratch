@@ -1,4 +1,4 @@
-.PHONY: check_uv install requirements check test docs docs-test update help
+.PHONY: check_uv install requirements check test update help
 
 check_uv: # install `uv` if not installed
 	@if ! command -v uv > /dev/null 2>&1; then \
